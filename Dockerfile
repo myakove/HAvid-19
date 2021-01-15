@@ -67,6 +67,7 @@ RUN pip install selenium --no-cache-dir && \
     pip install flask --no-cache-dir && \
     pip install flask_restful --no-cache-dir && \
     pip install loguru --no-cache-dir && \
+    pip install Pillow --no-cache-dir && \
     pip install cryptography==2.6.1 --no-cache-dir
 
 RUN mkdir -p /opt/dockerbot \
@@ -82,6 +83,7 @@ COPY workers/Infogan_Health_Statements.py /opt/dockerbot
 COPY workers/Hilan_Health_Statements.py /opt/dockerbot
 COPY workers/Hbinov_Health_Statements.py /opt/dockerbot
 COPY workers/Amdocs_Health_Statements.py /opt/dockerbot
+COPY workers/Pedagogy_Health_Statements.py /opt/dockerbot
 COPY helpers.py /opt/dockerbot
 COPY dockerbot.py /opt/dockerbot
 COPY please_sign.jpg /opt/dockerbot

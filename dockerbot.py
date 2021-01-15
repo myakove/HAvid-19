@@ -5,7 +5,8 @@ import subprocess, os, sys, shutil, yaml
 from flask import Flask, request, make_response, render_template, url_for, g, send_file
 from flask import send_from_directory, jsonify
 from flask_restful import Resource, Api
- 
+from PIL import Image as pil_image
+
 configfile="/opt/dockerbot/config/config.yml"
 original_configfile = r'/etc/config.yml'
 edu_Image = '/opt/dockerbot/images/edu_approval.png'
@@ -15,6 +16,8 @@ infogan_Image = '/opt/dockerbot/images/infogan_approval.png'
 hilan_Image = '/opt/dockerbot/images/hilan_approval.png'
 amdocs_Image = '/opt/dockerbot/images/amdocs_approval.png'
 hbinov_Image = '/opt/dockerbot/images/hbinov_approval.png'
+pedagogy_Image = '/opt/dockerbot/images/pedagogy_approval/'
+
 
 def CopyConfig():
     if not os.path.exists(configfile):
@@ -34,6 +37,48 @@ def ReadConfig():
 
 
 app = Flask(__name__)
+
+@app.route('/pedagogy/sign')
+def sign_pedagogy():
+    list = ReadConfig()
+    if list['pedagogy']['USER_ID'] and list['pedagogy']['USER_KEY'] != None:
+        try:
+            logger.info(f"Starting Sign process at https://pedagogy.co.il/parentsmoe.html")
+            import Pedagogy_Health_Statements
+            if Pedagogy_Health_Statements.sign(str(list['pedagogy']['USER_ID']), list['pedagogy']['USER_KEY'], pedagogy_Image) == 1:
+                return jsonify('{"signed":"1","data":""}')
+            else:
+                return jsonify('{"signed":"0","data":""}')
+        except Exception as ex:
+            logger.error(str(ex))
+            return jsonify('{"signed":"0","data":"' + str(ex) + '"}')
+
+    return jsonify('{"signed":"0","data":"Pedagogy is not configured"}')
+
+
+@app.route('/pedagogy/statement')
+def pedagogy_statement():
+    if os.path.exists(pedagogy_Image):
+        files = os.listdir(pedagogy_Image)
+        if not files:
+            return send_file(str(default_Image), mimetype='image/jpeg', cache_timeout=-1)
+
+        image_path = os.path.join(pedagogy_Image, "pedagogy_statement.jpg")
+        result = pil_image.new("RGB", (800, 800))
+
+        for index, file in enumerate(files):
+            img = pil_image.open(os.path.join(pedagogy_Image, file))
+            img.thumbnail((400, 400), pil_image.ANTIALIAS)
+            x = index // 2 * 400
+            y = index % 2 * 400
+            w, h = img.size
+            result.paste(img, (x, y, x + w, y + h))
+
+        result.save(image_path)
+        return send_file(image_path, mimetype='image/jpeg', cache_timeout=-1)
+    else:
+        return send_file(str(default_Image), mimetype='image/jpeg', cache_timeout=-1)
+
 
 @app.route('/edu/sign')
 def sign_edu():
@@ -128,7 +173,7 @@ def mashov_sign():
                         logger.info("Starting Sign process at https://web.mashov.info/students/login for Kid Number: " + str(Mashov_Kid_Number))
                         Prep_Switch_MASHOV_USER_DICT_ID_KID = list['mashov']['kid'+str(Mashov_Kid_Number)]['MASHOV_USER_ID_KID']
                         Prep_Switch_MASHOV_USER_DICT_ID_PWD = list['mashov']['kid'+str(Mashov_Kid_Number)]['MASHOV_USER_PWD_KID']
-                        Prep_Switch_MASHOV_USER_DICT_ID_SCHOOL_ID = list['mashov']['kid'+str(Mashov_Kid_Number)]['MASHOV_SCHOOL_ID_KID']                     
+                        Prep_Switch_MASHOV_USER_DICT_ID_SCHOOL_ID = list['mashov']['kid'+str(Mashov_Kid_Number)]['MASHOV_SCHOOL_ID_KID']
                         Mashov_Health_Statements.sign(Prep_Switch_MASHOV_USER_DICT_ID_KID, Prep_Switch_MASHOV_USER_DICT_ID_PWD, Prep_Switch_MASHOV_USER_DICT_ID_SCHOOL_ID, str(Mashov_Kid_Number), Image + str(Mashov_Kid_Number) + ".png")
             else:
                 return jsonify('{"signed":"0","data":"Mashov is not configured"}')
@@ -137,7 +182,7 @@ def mashov_sign():
             logger.exception("Faild to sign Mashov, Msg: " + str(ex))
             return jsonify('{"signed":"0","data":"' + str(ex) + '"}')
         return jsonify('{"signed":"1","data":""}')
-            
+
     else:
         return jsonify('{"signed":"0","data":"Mashov is not configured"}')
 
