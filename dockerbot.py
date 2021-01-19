@@ -64,6 +64,9 @@ def pedagogy_statement():
             return send_file(str(default_Image), mimetype='image/jpeg', cache_timeout=-1)
 
         image_path = os.path.join(pedagogy_Image, "pedagogy_statement.jpg")
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
         result = pil_image.new("RGB", (800, 800))
 
         for index, file in enumerate(files):
