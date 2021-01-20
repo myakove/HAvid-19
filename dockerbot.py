@@ -59,17 +59,19 @@ def sign_pedagogy():
 @app.route('/pedagogy/statement')
 def pedagogy_statement():
     if os.path.exists(pedagogy_Image):
+        image_path = os.path.join(pedagogy_Image, "pedagogy_statement.png")
+        if os.path.exists(image_path):
+            logger.info(f"{image_path} exists, removing.")
+            os.remove(image_path)
+
         files = os.listdir(pedagogy_Image)
         if not files:
-            return send_file(str(default_Image), mimetype='image/jpeg', cache_timeout=-1)
-
-        image_path = os.path.join(pedagogy_Image, "pedagogy_statement.jpg")
-        if os.path.exists(image_path):
-            os.remove(image_path)
+            return send_file(str(default_Image), mimetype='image/png', cache_timeout=-1)
 
         result = pil_image.new("RGB", (800, 800))
 
         for index, file in enumerate(files):
+            logger.info(f"Processing file: {file}")
             img = pil_image.open(os.path.join(pedagogy_Image, file))
             img.thumbnail((400, 400), pil_image.ANTIALIAS)
             x = index // 2 * 400
@@ -77,10 +79,11 @@ def pedagogy_statement():
             w, h = img.size
             result.paste(img, (x, y, x + w, y + h))
 
+        logger.info(f"Save final image: {image_path}")
         result.save(image_path)
-        return send_file(image_path, mimetype='image/jpeg', cache_timeout=-1)
+        return send_file(image_path, mimetype='image/png', cache_timeout=-1)
     else:
-        return send_file(str(default_Image), mimetype='image/jpeg', cache_timeout=-1)
+        return send_file(str(default_Image), mimetype='image/png', cache_timeout=-1)
 
 
 @app.route('/edu/sign')
@@ -263,13 +266,13 @@ def sign_hbinov():
 
     return jsonify('{"signed":"0","data":"hbinov is not configured"}')
 
+
 @app.route('/hbinov/statement')
 def hbinov_statement():
     if os.path.exists(hbinov_Image):
         return send_file(str(hbinov_Image), mimetype='image/png', cache_timeout=-1)
     else:
         return send_file(str(default_Image), mimetype='image/jpeg',cache_timeout=-1)
-
 
 
 if __name__ == '__main__':

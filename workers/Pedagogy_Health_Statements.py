@@ -11,6 +11,7 @@ from selenium.common.exceptions import InvalidSessionIdException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from loguru import logger
+# import temp_helpers as helpers
 import helpers
 
 
@@ -19,21 +20,25 @@ def sign(userCode, sitePassword, Image):
         #### Starting Sign Proc ####
         logger.info("Starting process")
         logger.debug('-----------------------0000000000-----------------------------------------------')
-        logger.debug(str(Image))
+        if not os.path.isdir(Image):
+            os.mkdir(Image)
+
+        image_path = os.path.join(Image, "pedagogy_statement.png")
+        logger.debug(str(image_path))
         #### Initialize Browser ####
         browser = helpers.GetBrowser()
         browser.get("https://pedagogy.co.il/parentsmoe.html")
         start = '//*[@id="main-app"]/div/div/div/div[2]/div/div[1]/div[2]/a/div/img'
         time.sleep(2)
-        helpers.fullpage_screenshot(browser, Image)
+        helpers.fullpage_screenshot(browser, image_path)
         helpers.log_browser(browser)
         browser.find_element_by_xpath(start).click()
         time.sleep(2)
-        helpers.fullpage_screenshot(browser, Image)
+        helpers.fullpage_screenshot(browser, image_path)
         helpers.log_browser(browser)
         browser.find_element_by_xpath('//*["EduCombinedAuthUidPwd"]').click()
         time.sleep(2)
-        helpers.fullpage_screenshot(browser, Image)
+        helpers.fullpage_screenshot(browser, image_path)
 
         #### Logging In ####
         user = '//*[@id="HIN_USERID"]'
@@ -47,9 +52,6 @@ def sign(userCode, sitePassword, Image):
         logger.info(f"Logged in")
         time.sleep(4)
 
-        if not os.path.isdir(Image):
-            os.mkdir(Image)
-
         try:
             select = Select(browser.find_element_by_xpath("//select[*]"))
             for idx, user_select in enumerate(select.options):
@@ -58,10 +60,14 @@ def sign(userCode, sitePassword, Image):
 
                 try:
                     select.select_by_index(index=idx)
+                    time.sleep(2)
                     browser.find_element_by_xpath('//*[@type="button"]').click()
-                except NoSuchElementException:
+                    logger.info(f"signed: {user_select.text}")
+                except NoSuchElementException as ex:
                     if "נשלח" in browser.page_source:
-                        pass
+                        logger.info(f"{user_select.text}: already signed")
+                    else:
+                        logger.error(str(ex))
 
                 helpers.fullpage_screenshot(browser, f"{Image}/{user_select.text}.png")
         except Exception as ex:
